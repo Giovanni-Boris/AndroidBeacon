@@ -1,13 +1,18 @@
 package com.erns.androidbeacon
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResultCallback
-import androidx.activity.result.contract.ActivityResultContract
+import android.Manifest;
+
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -26,19 +31,20 @@ class MainActivity : AppCompatActivity() {
         val btnStartTransmitter: Button = findViewById(R.id.btnStartTransmitter)
         btnStartTransmitter.setOnClickListener {
             val transmitter = Transmitter(applicationContext)
-            transmitter.startAdvertiser()
+            transmitter.startAdvertiser("6ef0e30d-7308-4458-b62e-f706c692ca77");
         }
 
         val permissions = arrayOf(
-            android.Manifest.permission.BLUETOOTH_ADVERTISE,
-            android.Manifest.permission.BLUETOOTH_CONNECT,
-            android.Manifest.permission.BLUETOOTH,
-            android.Manifest.permission.BLUETOOTH_ADMIN,
-            android.Manifest.permission.ACCESS_FINE_LOCATION,
-            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
         )
 
         activityResultLauncher.launch(permissions)
+
 
     }
 

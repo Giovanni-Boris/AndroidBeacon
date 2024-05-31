@@ -3,43 +3,47 @@ package com.erns.androidbeacon
 import android.Manifest
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.AdvertiseCallback
-import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertiseSettings
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.ParcelUuid
 import android.util.Log
 import androidx.core.app.ActivityCompat
-import com.erns.androidbeacon.tools.BleTools
-import java.nio.ByteBuffer
+import com.erns.androidbeacon.tools.AdvertiserSettingsHelper
+import com.erns.androidbeacon.tools.BeaconBuilder
+
 
 class Transmitter(private val context: Context) {
     private val TAG = "Transmitter"
-
-    fun startAdvertiser() {
-        val Service_UUID = ParcelUuid
-            .fromString("6ef0e30d-7308-4458-b62e-f706c692ca77")
-
+    fun checkLocationPermission(): Boolean {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.e(TAG, "ACCESS_FINE_LOCATION permission denied!")
+            return false
+        }
+        return true
+    }
+    fun startAdvertiser(formatUuid: String) {
+        val Service_UUID = ParcelUuid.fromString(formatUuid)
         val bluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         var adapter = bluetoothManager.adapter
 
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.BLUETOOTH_ADVERTISE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (!checkLocationPermission()) {
             Log.e(TAG, "BLUETOOTH_CONNECT denied!")
             return
         }
 
         Log.e(TAG, " adapter.leMaximumAdvertisingDataLength "+ adapter.leMaximumAdvertisingDataLength)
 
-        adapter.name="LE"
+        adapter.name="EEL"
 
         val advertiser = adapter.bluetoothLeAdvertiser
 
-        if (!adapter.isLe2MPhySupported) {
+        /*if (!adapter.isLe2MPhySupported) {
             Log.e(TAG, "2M PHY not supported!")
             return
         }
@@ -47,37 +51,15 @@ class Transmitter(private val context: Context) {
         if (!adapter.isLeExtendedAdvertisingSupported) {
             Log.e(TAG, "LE Extended Advertising not supported!")
             return
-        }
+        }*/
+        val beaconData = BeaconBuilder.createBeaconData(Service_UUID, formatUuid)
 
-        val dataBuilder = AdvertiseData.Builder()
-        dataBuilder.setIncludeDeviceName(true) // To save on packet space you may not include some data
-        dataBuilder.setIncludeTxPowerLevel(false)
-
-        val manufacturerData = ByteBuffer.allocate(23)
-        val uuid: ByteArray = BleTools.getIdAsByte("6ef0e30d73084458b62ef706c692ca77")
-
-        manufacturerData.put(0, 0x02.toByte()) // Beacon Identifier
-        manufacturerData.put(1, 0x15.toByte()) // Beacon Identifier
-        for (i in 2..17) {
-            manufacturerData.put(i, uuid[i - 2]) // adding the UUID
-        }
-        manufacturerData.put(18, 0x00.toByte()) // first byte of Major
-        manufacturerData.put(19, 0x05.toByte()) // second byte of Major
-        manufacturerData.put(20, 0x00.toByte()) // first minor
-        manufacturerData.put(21, 0x58.toByte()) // second minor
-        manufacturerData.put(22, 0x76.toByte()) // txPower
-        dataBuilder.addManufacturerData(76, manufacturerData.array())
-
-
-        val settingsBuilder = AdvertiseSettings.Builder()
-        settingsBuilder.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER) // saves on battery power
-        settingsBuilder.setConnectable(false) // set to true to connect to other ble devices
-        settingsBuilder.setTimeout(0) //set to 0 to continously advertise
-        settingsBuilder.setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
+        val settingsHelper = AdvertiserSettingsHelper()
+        val settings = settingsHelper.createSettings(connectable = false, timeoutMillis = 0)
 
         if (advertiser != null) {
             advertiser.stopAdvertising(callbackClose)
-            advertiser.startAdvertising(settingsBuilder.build(), dataBuilder.build(), callback)
+            advertiser.startAdvertising(settings, beaconData , callback)
         } else {
             Log.d(TAG, "advertiser is null")
         }
